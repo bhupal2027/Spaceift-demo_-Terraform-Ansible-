@@ -8,18 +8,14 @@ terraform {
 }
 
 provider "aws" {
-  region = "ap-south-2"
-}
-=======
-}
-
-provider "aws" {
   region = "ap-south-1"
 }
 
-# --------------------------------------------------
-# Fetch latest Ubuntu 22.04 (Jammy) AMI
-# --------------------------------------------------
+variable "public_key" {
+  description = "Path to the SSH public key"
+  type        = string
+}
+
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -38,12 +34,9 @@ data "aws_ami" "ubuntu" {
     values = ["x86_64"]
   }
 
-  owners = ["099720109477"] # Canonical
+  owners = ["099720109477"]
 }
 
-# --------------------------------------------------
-# Define EC2 instances (4 instances)
-# --------------------------------------------------
 locals {
   instances = {
     instance1 = {
@@ -57,22 +50,17 @@ locals {
   }
 }
 
-# --------------------------------------------------
-# Create AWS Key Pair using Spacelift-mounted public key
-# --------------------------------------------------
 resource "aws_key_pair" "ssh_key" {
-  key_name   = "ec2"
+  key_name   = "ec2-demo"
   public_key = file(var.public_key)
 }
 
-# --------------------------------------------------
-# Create EC2 instances
-# --------------------------------------------------
 resource "aws_instance" "this" {
-  for_each                    = local.instances
-  ami                         = each.value.ami
-  instance_type               = each.value.instance_type
-  key_name                    = aws_key_pair.ssh_key.key_name
+  for_each      = local.instances
+  ami           = each.value.ami
+  instance_type = each.value.instance_type
+  key_name      = aws_key_pair.ssh_key.key_name
+
   associate_public_ip_address = true
 
   tags = {
