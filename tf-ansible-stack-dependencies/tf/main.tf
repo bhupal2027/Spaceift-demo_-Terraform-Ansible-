@@ -5,7 +5,6 @@ terraform {
       version = "~> 5.0"
     }
   }
-<<<<<<< HEAD
 }
 
 provider "aws" {
@@ -88,4 +87,3 @@ resource "aws_instance" "this" {
     Name = each.key
   }
 }
->>>>>>> 01e4b18 (commited again)
