@@ -1,25 +1,16 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
 provider "aws" {
-  region = "ap-south-1"
+  region = "eu-west-1"
 }
 
 # --------------------------------------------------
-# Fetch latest Ubuntu 22.04 (Jammy) AMI
+# Fetch latest Ubuntu 20.04 (Focal) AMI
 # --------------------------------------------------
 data "aws_ami" "ubuntu" {
   most_recent = true
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
   }
 
   filter {
@@ -36,61 +27,38 @@ data "aws_ami" "ubuntu" {
 }
 
 # --------------------------------------------------
-# EC2 Instance Definitions
+# Define ONLY 2 EC2 instances
 # --------------------------------------------------
 locals {
   instances = {
     instance1 = {
-      instance_type = "t3.micro"
+      ami           = data.aws_ami.ubuntu.id
+      instance_type = "t2.micro"
     }
     instance2 = {
-      instance_type = "t3.micro"
+      ami           = data.aws_ami.ubuntu.id
+      instance_type = "t2.micro"
     }
   }
 }
 
 # --------------------------------------------------
-# Security Group (Explicit – Best Practice)
-# --------------------------------------------------
-resource "aws_security_group" "ec2_sg" {
-  name        = "ec2-ssh-sg"
-  description = "Allow SSH access"
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# --------------------------------------------------
-# SSH Key Pair (Spacelift-safe)
+# SSH Key Pair
 # --------------------------------------------------
 resource "aws_key_pair" "ssh_key" {
-  key_name   = "ec2-demo"
-  public_key = var.public_key
+  key_name   = "ec2"
+  public_key = file(var.public_key)
 }
 
 # --------------------------------------------------
-# EC2 Instances
+# Create EC2 instances
 # --------------------------------------------------
 resource "aws_instance" "this" {
-  for_each = local.instances
-
-  ami                         = data.aws_ami.ubuntu.id
+  for_each                    = local.instances
+  ami                         = each.value.ami
   instance_type               = each.value.instance_type
   key_name                    = aws_key_pair.ssh_key.key_name
   associate_public_ip_address = true
-  vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
 
   tags = {
     Name = each.key
