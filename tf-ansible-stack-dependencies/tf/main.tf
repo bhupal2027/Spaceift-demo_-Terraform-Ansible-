@@ -11,11 +11,9 @@ provider "aws" {
   region = "ap-south-1"
 }
 
-variable "public_key" {
-  description = "Path to the SSH public key"
-  type        = string
-}
-
+# --------------------------------------------------
+# Fetch latest Ubuntu 22.04 (Jammy) AMI
+# --------------------------------------------------
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -34,34 +32,65 @@ data "aws_ami" "ubuntu" {
     values = ["x86_64"]
   }
 
-  owners = ["099720109477"]
+  owners = ["099720109477"] # Canonical
 }
 
+# --------------------------------------------------
+# EC2 Instance Definitions
+# --------------------------------------------------
 locals {
   instances = {
     instance1 = {
-      ami           = data.aws_ami.ubuntu.id
       instance_type = "t3.micro"
     }
     instance2 = {
-      ami           = data.aws_ami.ubuntu.id
       instance_type = "t3.micro"
     }
   }
 }
 
-resource "aws_key_pair" "ssh_key" {
-  key_name   = "ec2-demo"
-  public_key = file(var.public_key)
+# --------------------------------------------------
+# Security Group (Explicit – Best Practice)
+# --------------------------------------------------
+resource "aws_security_group" "ec2_sg" {
+  name        = "ec2-ssh-sg"
+  description = "Allow SSH access"
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
-resource "aws_instance" "this" {
-  for_each      = local.instances
-  ami           = each.value.ami
-  instance_type = each.value.instance_type
-  key_name      = aws_key_pair.ssh_key.key_name
+# --------------------------------------------------
+# SSH Key Pair (Spacelift-safe)
+# --------------------------------------------------
+resource "aws_key_pair" "ssh_key" {
+  key_name   = "ec2-demo"
+  public_key = var.public_key
+}
 
+# --------------------------------------------------
+# EC2 Instances
+# --------------------------------------------------
+resource "aws_instance" "this" {
+  for_each = local.instances
+
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = each.value.instance_type
+  key_name                    = aws_key_pair.ssh_key.key_name
   associate_public_ip_address = true
+  vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
 
   tags = {
     Name = each.key
