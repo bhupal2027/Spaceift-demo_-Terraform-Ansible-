@@ -1,4 +1,5 @@
 variable "public_key" {
-  type    = string
-  default = "/mnt/workspace/id_rsa.pub"
+  description = "SSH public key content"
+  type        = string
+  sensitive   = true
 }
