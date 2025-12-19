@@ -1,5 +1,4 @@
 variable "public_key" {
-  description = "SSH public key content"
-  type        = string
-  sensitive   = true
+  type    = string
+  default = "/mnt/workspace/"ssh-key
 }
