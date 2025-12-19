@@ -1,4 +1,4 @@
 variable "public_key" {
   type    = string
-  default = "/mnt/workspace/"ssh-key
+  default = "/mnt/workspace/id_rsa.pub"
 }
