@@ -1,4 +1,10 @@
-variable "public_key" {
+variable "region" {
   type    = string
-  default = "/mnt/workspace/id_rsa.pub"
+  default = "ap-south-1"
+}
+
+variable "key_name" {
+  type        = string
+  description = "Existing EC2 key pair name"
+  default     = "ec2"
 }
