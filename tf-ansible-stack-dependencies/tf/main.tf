@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "ap-south-1"
+  region = var.region
 }
 
 data "aws_ami" "ubuntu" {
@@ -19,7 +19,8 @@ data "aws_ami" "ubuntu" {
     name   = "architecture"
     values = ["x86_64"]
   }
-  owners = ["099720109477"] #canonical
+
+  owners = ["099720109477"] # Canonical
 }
 
 locals {
@@ -43,16 +44,13 @@ locals {
   }
 }
 
-resource "aws_key_pair" "ssh_key" {
-  key_name   = "ec2"
-  public_key = file(var.public_key)
-}
-
 resource "aws_instance" "this" {
-  for_each                    = local.instances
-  ami                         = each.value.ami
-  instance_type               = each.value.instance_type
-  key_name                    = aws_key_pair.ssh_key.key_name
+  for_each = local.instances
+
+  ami           = each.value.ami
+  instance_type = each.value.instance_type
+  key_name      = var.key_name
+
   associate_public_ip_address = true
 
   tags = {
