@@ -2,9 +2,6 @@ provider "aws" {
   region = "ap-south-1"
 }
 
-# --------------------------------------------------
-# Fetch latest Ubuntu 20.04 (Focal) AMI
-# --------------------------------------------------
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -22,37 +19,35 @@ data "aws_ami" "ubuntu" {
     name   = "architecture"
     values = ["x86_64"]
   }
-
-  owners = ["099720109477"] # Canonical
+  owners = ["099720109477"] #canonical
 }
 
-# --------------------------------------------------
-# Define ONLY 2 EC2 instances
-# --------------------------------------------------
 locals {
   instances = {
     instance1 = {
       ami           = data.aws_ami.ubuntu.id
-      instance_type = "t3.micro"
+      instance_type = "t2.micro"
     }
     instance2 = {
       ami           = data.aws_ami.ubuntu.id
-      instance_type = "t3.micro"
+      instance_type = "t2.micro"
+    }
+    instance3 = {
+      ami           = data.aws_ami.ubuntu.id
+      instance_type = "t2.micro"
+    }
+    instance4 = {
+      ami           = data.aws_ami.ubuntu.id
+      instance_type = "t2.micro"
     }
   }
 }
 
-# --------------------------------------------------
-# SSH Key Pair
-# --------------------------------------------------
 resource "aws_key_pair" "ssh_key" {
   key_name   = "ec2"
-  public_key = var.public_key
+  public_key = file(var.public_key)
 }
 
-# --------------------------------------------------
-# Create EC2 instances
-# --------------------------------------------------
 resource "aws_instance" "this" {
   for_each                    = local.instances
   ami                         = each.value.ami
